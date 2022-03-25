@@ -1,44 +1,56 @@
-import { useState } from 'react'
-import logo from './logo.svg'
+
+import { Box, List, ListItem, ThemeIcon } from '@mantine/core'
 import './App.css'
+import useSWR, { mutate } from 'swr'
+import AddTodo from './components/AddTodo'
+import { CheckCircleFillIcon } from '@primer/octicons-react'   
+
+export interface Todo {
+  id: number,
+  title: string,
+  body: string,
+  done: boolean
+}
+
+export const ENDPOINT = 'http://localhost:4000'
+
+const fetcher = (url: string) => fetch(`${ENDPOINT}/${url}`).then((r) => r.json())   
+
 
 function App() {
-  const [count, setCount] = useState(0)
 
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>Hello Vite + React!</p>
-        <p>
-          <button type="button" onClick={() => setCount((count) => count + 1)}>
-            count is: {count}
-          </button>
-        </p>
-        <p>
-          Edit <code>App.tsx</code> and save to test HMR updates.
-        </p>
-        <p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-          {' | '}
-          <a
-            className="App-link"
-            href="https://vitejs.dev/guide/features.html"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Vite Docs
-          </a>
-        </p>
-      </header>
-    </div>
+  const {data, mutate} = useSWR<Todo[]>('api/todos', fetcher) 
+  
+  async function markDone(id: number) {
+    const updated = await fetch(`${ENDPOINT}/api/todos/${id}/done`, {
+      method: "PATCH",
+    }).then((r) => r.json())    
+  
+    mutate(updated)    
+    console.log(mutate(updated))
+  }
+
+  return ( 
+
+    <Box sx={(theme) => ({
+      padding: "2rem",
+      width: "100%",
+      maxWidth: "40rem",
+      margin: "0 auto",
+      })}> 
+    
+     
+      <List spacing="xs" size="sm" mb={12} center>
+        {data?.map(todo => { 
+          return <List.Item onClick={() => markDone(todo.id)} key={`todo_list__${todo.id}`} icon={todo.done ? (<ThemeIcon color="teal" size={24} radius="xl"><CheckCircleFillIcon size={20}/></ThemeIcon>) : (<ThemeIcon color="gray" size={24} radius="xl"><CheckCircleFillIcon size={20}/></ThemeIcon>)}>{todo.title}
+              
+          </List.Item>    
+        })}
+        
+      </List>
+
+     <AddTodo mutate={mutate}/>     
+    </Box>
   )
 }
 
